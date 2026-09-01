@@ -1,0 +1,10 @@
+{
+  "city": "São Paulo",
+  "searchZoom": 15,
+  "cellKm": 1.2,
+  "maxResultsPerCell": 120,
+  "maxSubdivideDepth": 2,
+  "hl": "pt-BR",
+  "gl": "br",
+  "geolocation": { "latitude": -23.55, "longitude": -46.633 }
+}

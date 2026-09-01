@@ -1,0 +1,7 @@
+[
+  { "id": "pinheiros",    "name": "Pinheiros",    "bbox": [-23.582, -46.712, -23.556, -46.672] },
+  { "id": "consolacao",   "name": "Consolação",   "bbox": [-23.566, -46.668, -23.545, -46.638] },
+  { "id": "itaim-bibi",   "name": "Itaim Bibi",   "bbox": [-23.598, -46.692, -23.570, -46.662] },
+  { "id": "vila-mariana", "name": "Vila Mariana", "bbox": [-23.598, -46.642, -23.572, -46.610] },
+  { "id": "republica",    "name": "República",    "bbox": [-23.552, -46.652, -23.538, -46.634] }
+]

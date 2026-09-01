@@ -1,0 +1,6 @@
+[
+  { "id": "barbershop", "keywords": ["barbearia"] },
+  { "id": "gym", "keywords": ["academia"] },
+  { "id": "salon", "keywords": ["salão de beleza", "cabeleireiro"] },
+  { "id": "tattoo", "keywords": ["estúdio de tatuagem", "tatuador"] }
+]
