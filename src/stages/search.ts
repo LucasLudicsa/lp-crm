@@ -65,10 +65,20 @@ export async function runCell(page: Page, cell: CellRow): Promise<void> {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await dismissConsent(page);
 
+    // Maps renders the feed / place panel after `domcontentloaded` — wait for
+    // whichever appears before deciding which branch we're on.
+    await Promise.race([
+      page.waitForSelector(SEL.resultLink, { timeout: 30_000 }),
+      page.waitForSelector(SEL.feed, { timeout: 30_000 }),
+      page.waitForSelector(SEL.detailName, { timeout: 30_000 }),
+    ]).catch(() => {});
+
     // A single result opens the detail panel directly (no feed).
-    const hasFeed = await page.locator(SEL.feed).count().catch(() => 0);
+    const hasResults =
+      (await page.locator(SEL.feed).count().catch(() => 0)) ||
+      (await page.locator(SEL.resultLink).count().catch(() => 0));
     let cards: CardRef[] = [];
-    if (hasFeed) {
+    if (hasResults) {
       cards = await scrollFeed(page);
     } else if (await page.locator(SEL.detailName).count().catch(() => 0)) {
       cards = [{ href: page.url(), name: await page.locator(SEL.detailName).first().textContent() }];
