@@ -40,10 +40,11 @@ cp .env.example .env    # optional — defaults are fine
 ## Usage
 
 ```bash
-# 1. Scrape a couple of central districts first to validate selectors
-npm run scrape -- --districts pinheiros,consolacao --limit-cells 20
+# 1. Small validation run
+npm run scrape -- --districts pinheiros --categories barbershop --limit-cells 6
 
-# 2. Full central slice
+# 2. Full central slice — search + detail interleave in chunks, so a Ctrl-C
+#    at any point still leaves fully-processed rows behind. Resumable: just re-run.
 npm run scrape -- --districts pinheiros,consolacao,itaim-bibi,vila-mariana,republica
 
 # 3. Enrich (website classification + WhatsApp + Instagram)
@@ -56,8 +57,18 @@ npm run export
 npm run stats
 ```
 
-Useful flags: `--seed-only`, `--skip-detail`, `--limit-details <n>` on `scrape`;
-`--limit <n>` on `enrich`; `--include-pending`, `--with-instagram-only` on `export`.
+The phases can also be run on their own — handy for doing search in one sitting
+and details in another:
+
+```bash
+npm run search -- --districts consolacao --limit 40   # search cells only
+npm run detail -- --limit 500                          # detail discovered businesses only
+npm run enrich -- --limit 500
+```
+
+Useful flags: `--seed-only`, `--skip-detail`, `--chunk <n>`, `--limit-cells <n>`,
+`--limit-details <n>` on `scrape`; `--include-pending`, `--with-instagram-only`
+on `export`.
 
 ### Scaling to the whole city
 

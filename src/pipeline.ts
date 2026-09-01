@@ -14,6 +14,8 @@ export interface ScrapeOptions {
   limitDetails?: number;
   seedOnly?: boolean;
   skipDetail?: boolean;
+  /** search N cells, then detail everything discovered, then repeat (default 8) */
+  chunk?: number;
 }
 
 /** Insert one `cells` row per (district x keyword x grid cell). Idempotent. */
@@ -42,11 +44,12 @@ export function seedCells(opts: ScrapeOptions): number {
   return n;
 }
 
-async function runSearchPhase(limit: number): Promise<void> {
+/** Scrape up to `limit` pending search cells. Returns how many were processed. */
+export async function searchPhase(limit = Number.MAX_SAFE_INTEGER): Promise<number> {
   const session = await openSession();
   const page = await session.newPage();
+  let processed = 0;
   try {
-    let processed = 0;
     while (processed < limit) {
       const batch = nextPendingCells(Math.min(10, limit - processed));
       if (!batch.length) break;
@@ -60,18 +63,19 @@ async function runSearchPhase(limit: number): Promise<void> {
         await politeSleep(env.searchMinDelay, env.searchMaxDelay);
       }
     }
-    log.info("search phase complete", { processed });
   } finally {
     await session.close();
   }
+  log.info("search phase complete", { processed });
+  return processed;
 }
 
-async function runDetailPhase(limit: number): Promise<void> {
+/** Fetch place details for up to `limit` discovered businesses. Returns how many. */
+export async function detailPhase(limit = Number.MAX_SAFE_INTEGER): Promise<number> {
   const session = await openSession();
   const workers = Math.max(1, env.detailConcurrency);
   const pages = await Promise.all(Array.from({ length: workers }, () => session.newPage()));
   let processed = 0;
-
   try {
     while (processed < limit) {
       const batch = nextBusinesses(
@@ -81,7 +85,6 @@ async function runDetailPhase(limit: number): Promise<void> {
       );
       if (!batch.length) break;
 
-      // Fan the batch across the page pool.
       const queue = [...batch];
       await Promise.all(
         pages.map(async (page) => {
@@ -93,19 +96,38 @@ async function runDetailPhase(limit: number): Promise<void> {
         }),
       );
     }
-    log.info("detail phase complete", { processed, workers });
   } finally {
     await session.close();
   }
+  log.info("detail phase complete", { processed, workers });
+  return processed;
 }
 
+/**
+ * Seed, then interleave search and detail in chunks so an interrupted run still
+ * leaves fully-processed rows behind. Everything is resumable — just run again.
+ */
 export async function scrape(opts: ScrapeOptions): Promise<void> {
   seedCells(opts);
   if (opts.seedOnly) return;
 
-  await runSearchPhase(opts.limitCells ?? Number.MAX_SAFE_INTEGER);
-  if (!opts.skipDetail) {
-    await runDetailPhase(opts.limitDetails ?? Number.MAX_SAFE_INTEGER);
+  const chunk = opts.chunk ?? 8;
+  let cellsLeft = opts.limitCells ?? Number.MAX_SAFE_INTEGER;
+  let detailsLeft = opts.limitDetails ?? Number.MAX_SAFE_INTEGER;
+
+  for (;;) {
+    const searched = await searchPhase(Math.min(chunk, cellsLeft));
+    cellsLeft -= searched;
+
+    let detailed = 0;
+    if (!opts.skipDetail && detailsLeft > 0) {
+      detailed = await detailPhase(detailsLeft);
+      detailsLeft -= detailed;
+    }
+
+    log.info("chunk complete", { ...stats() });
+    if (searched === 0 && detailed === 0) break;
+    if (cellsLeft <= 0 && (opts.skipDetail || detailsLeft <= 0)) break;
   }
   log.info("scrape done", stats());
 }

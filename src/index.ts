@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { scrape, seedCells } from "./pipeline.js";
+import { detailPhase, scrape, searchPhase, seedCells } from "./pipeline.js";
 import { enrich } from "./enrich.js";
 import { exportCsv } from "./export.js";
 import { stats } from "./db.js";
@@ -18,6 +18,7 @@ program
   .option("--categories <ids>", "comma-separated category ids (default: all in config)", list)
   .option("--limit-cells <n>", "max search cells this run", int)
   .option("--limit-details <n>", "max place-detail pages this run", int)
+  .option("--chunk <n>", "search N cells, then detail all discovered, then repeat (default 8)", int)
   .option("--seed-only", "only populate the cells table, then exit")
   .option("--skip-detail", "run search phase only")
   .action(async (o) => {
@@ -26,6 +27,7 @@ program
       categories: o.categories,
       limitCells: o.limitCells,
       limitDetails: o.limitDetails,
+      chunk: o.chunk,
       seedOnly: o.seedOnly,
       skipDetail: o.skipDetail,
     });
@@ -38,6 +40,25 @@ program
   .option("--categories <ids>", "", list)
   .action((o) => {
     seedCells({ districts: o.districts, categories: o.categories });
+  });
+
+program
+  .command("search")
+  .description("Run only the Google Maps search phase over pending cells")
+  .option("--districts <ids>", "", list)
+  .option("--categories <ids>", "", list)
+  .option("--limit <n>", "max search cells this run", int)
+  .action(async (o) => {
+    seedCells({ districts: o.districts, categories: o.categories });
+    await searchPhase(o.limit);
+  });
+
+program
+  .command("detail")
+  .description("Run only the place-detail phase over discovered businesses")
+  .option("--limit <n>", "max place-detail pages this run", int)
+  .action(async (o) => {
+    await detailPhase(o.limit);
   });
 
 program
