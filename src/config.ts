@@ -48,8 +48,9 @@ export const env = {
   proxyUrl: process.env.PROXY_URL || undefined,
   searchMinDelay: Number(process.env.SEARCH_MIN_DELAY ?? 8),
   searchMaxDelay: Number(process.env.SEARCH_MAX_DELAY ?? 20),
-  detailMinDelay: Number(process.env.DETAIL_MIN_DELAY ?? 3),
-  detailMaxDelay: Number(process.env.DETAIL_MAX_DELAY ?? 8),
+  detailMinDelay: Number(process.env.DETAIL_MIN_DELAY ?? 2),
+  detailMaxDelay: Number(process.env.DETAIL_MAX_DELAY ?? 5),
+  detailConcurrency: Number(process.env.DETAIL_CONCURRENCY ?? 3),
   enrichConcurrency: Number(process.env.ENRICH_CONCURRENCY ?? 4),
 };
 

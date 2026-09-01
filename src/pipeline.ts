@@ -68,19 +68,32 @@ async function runSearchPhase(limit: number): Promise<void> {
 
 async function runDetailPhase(limit: number): Promise<void> {
   const session = await openSession();
-  const page = await session.newPage();
+  const workers = Math.max(1, env.detailConcurrency);
+  const pages = await Promise.all(Array.from({ length: workers }, () => session.newPage()));
+  let processed = 0;
+
   try {
-    let processed = 0;
     while (processed < limit) {
-      const batch = nextBusinesses("discovered", Math.min(20, limit - processed), "detail_attempts");
+      const batch = nextBusinesses(
+        "discovered",
+        Math.min(workers * 5, limit - processed),
+        "detail_attempts",
+      );
       if (!batch.length) break;
-      for (const biz of batch) {
-        await runDetail(page, biz);
-        processed++;
-        await politeSleep(env.detailMinDelay, env.detailMaxDelay);
-      }
+
+      // Fan the batch across the page pool.
+      const queue = [...batch];
+      await Promise.all(
+        pages.map(async (page) => {
+          for (let biz = queue.shift(); biz; biz = queue.shift()) {
+            await runDetail(page, biz);
+            processed++;
+            await politeSleep(env.detailMinDelay, env.detailMaxDelay);
+          }
+        }),
+      );
     }
-    log.info("detail phase complete", { processed });
+    log.info("detail phase complete", { processed, workers });
   } finally {
     await session.close();
   }
