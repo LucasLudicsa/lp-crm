@@ -9,6 +9,8 @@
   },
   "scripts": {
     "scrape": "tsx src/index.ts scrape",
+    "search": "tsx src/index.ts search",
+    "detail": "tsx src/index.ts detail",
     "enrich": "tsx src/index.ts enrich",
     "export": "tsx src/index.ts export",
     "stats": "tsx src/index.ts stats",
