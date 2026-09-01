@@ -11,6 +11,8 @@ export interface ExportOptions {
   includePending?: boolean;
   /** only rows with a verified Instagram */
   withInstagramOnly?: boolean;
+  /** keep rows that have neither a WhatsApp number nor an Instagram (off by default) */
+  includeUnreachable?: boolean;
 }
 
 const COLUMNS = [
@@ -40,7 +42,11 @@ export function exportCsv(opts: ExportOptions = {}): { path: string; rows: numbe
     )
     .all(...statuses) as Record<string, string | null>[];
 
-  const filtered = opts.withInstagramOnly ? rows.filter((r) => r.instagram_url) : rows;
+  let filtered = opts.withInstagramOnly ? rows.filter((r) => r.instagram_url) : rows;
+  if (!opts.includeUnreachable) {
+    // A lead with no contact channel is not actionable for the consuming app.
+    filtered = filtered.filter((r) => r.phone_e164 || r.instagram_url);
+  }
 
   const records = filtered.map((r) => ({
     name: r.name ?? "",

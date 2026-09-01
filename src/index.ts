@@ -75,8 +75,14 @@ program
   .option("--out <path>", "output path (default: config / .env)")
   .option("--include-pending", "also include target rows not yet enriched")
   .option("--with-instagram-only", "only rows that have a verified Instagram")
+  .option("--include-unreachable", "keep rows with no WhatsApp and no Instagram")
   .action((o) => {
-    exportCsv({ outPath: o.out, includePending: o.includePending, withInstagramOnly: o.withInstagramOnly });
+    exportCsv({
+      outPath: o.out,
+      includePending: o.includePending,
+      withInstagramOnly: o.withInstagramOnly,
+      includeUnreachable: o.includeUnreachable,
+    });
   });
 
 program
